@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>קולות קוראים — תיק מעקב</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF8; --card:#FFFFFF; --ink:#1A2321; --muted:#6B7472;
+  --line:#E4E4E0; --teal:#0E7C7B; --teal-soft:#E6F2F1;
+  --amber:#B45309; --red:#B42318; --stamp:#0E7C7B;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:'Heebo',sans-serif;
+  font-weight:300;line-height:1.55;padding:0 16px 80px}
+.wrap{max-width:880px;margin:0 auto}
+
+header{padding:36px 0 8px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--teal);font-weight:500}
+h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(28px,5vw,42px);line-height:1.1}
+.meta{color:var(--muted);font-size:13px;margin:6px 0 14px}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;
+  padding:6px 14px;font-size:13px;font-family:inherit;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:20px 22px;margin:0 0 16px;position:relative;transition:border-color .15s}
+.card.marked{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal)}
+.stamp{position:absolute;top:16px;left:16px;border:2px solid var(--stamp);color:var(--stamp);
+  border-radius:6px;padding:2px 9px;font-family:'Frank Ruhl Libre',serif;font-weight:700;
+  font-size:15px;transform:rotate(-4deg);opacity:.85}
+.tags{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.tag-cat{color:var(--teal);font-weight:500}
+h2{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:22px;margin:4px 0 10px;
+  padding-left:64px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:14.5px}
+dt{font-weight:500;color:var(--muted)}
+dd{margin:0}
+.deadline-soon{color:var(--amber);font-weight:500}
+.deadline-urgent{color:var(--red);font-weight:700}
+.family{color:var(--teal);font-weight:500}
+
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.btn{border-radius:8px;padding:8px 14px;font-size:13.5px;font-family:inherit;
+  font-weight:500;text-decoration:none;cursor:pointer;border:1px solid var(--line);
+  background:var(--card);color:var(--ink)}
+.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.btn-link{color:var(--teal);border-color:var(--teal)}
+.btn-mark[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.reminders{display:none;width:100%;background:var(--teal-soft);border-radius:8px;
+  padding:10px 14px;font-size:13.5px}
+.card.marked .reminders{display:block}
+.reminders a{color:var(--teal);font-weight:500;margin-left:18px;text-decoration:none}
+.reminders a:hover{text-decoration:underline}
+
+.empty{text-align:center;color:var(--muted);padding:60px 0;font-size:15px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){dl{grid-template-columns:1fr}dt{margin-top:6px}h2{padding-left:56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">תיק מעקב · הזדמנויות פעילות</div>
+  <h1>קולות קוראים</h1>
+  <div class="meta">עודכן: __UPDATED__ · ממוין לפי דדליין · הסימונים נשמרים בדפדפן שלך</div>
+</header>
+
+<div class="filters" id="filters" role="group" aria-label="סינון">
+  <button class="chip" data-f="all" aria-pressed="true">הכל</button>
+  <button class="chip" data-f="marked" aria-pressed="false">✓ סומנו להגשה</button>
+</div>
+
+<main id="list"></main>
+<div class="empty" id="empty" hidden>אין פריטים בסינון הזה.</div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const marks = new Set(JSON.parse(localStorage.getItem('oc_marks')||'[]'));
+let filter = 'all';
+
+function daysLeft(d){
+  if(!d) return null;
+  return Math.round((new Date(d) - new Date().setHours(0,0,0,0)) / 864e5);
+}
+function esc(s){const e=document.createElement('span');e.textContent=s||'';return e.innerHTML}
+
+function render(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  let shown = 0;
+  const cats = new Set();
+  DATA.forEach(it => cats.add(it.category));
+
+  DATA.forEach(it => {
+    if(filter==='marked' && !marks.has(it.id)) return;
+    if(filter!=='all' && filter!=='marked' && it.category!==filter) return;
+    shown++;
+    const dl = daysLeft(it.deadline);
+    let dlHtml = '—';
+    if(it.deadline){
+      const cls = dl<=7 ? 'deadline-urgent' : dl<=21 ? 'deadline-soon' : '';
+      dlHtml = `<span class="${cls}">${esc(it.deadline)}${dl!==null?` (בעוד ${dl} ימים)`:''}</span>`;
+    }
+    const fam = (it.category==='רזידנסי' && it.family_flexible)
+      ? `<dt>משפחה</dt><dd class="family">👨‍👩‍👧 גמיש להגעה עם ילדים</dd>` : '';
+    const rem = (it.reminders||[]).map(([lbl,url]) =>
+      `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(lbl)}</a>`).join('');
+    const card = document.createElement('article');
+    card.className = 'card' + (marks.has(it.id)?' marked':'');
+    card.innerHTML = `
+      <div class="stamp" aria-label="ציון רלוונטיות">${it.score}/10</div>
+      <div class="tags"><span class="tag-cat">${esc(it.category)}</span>
+        <span>${esc(it.source)}</span></div>
+      <h2>${esc(it.name)}</h2>
+      <dl>
+        <dt>תיאור</dt><dd>${esc(it.description)}</dd>
+        <dt>למי מתאים</dt><dd>${esc(it.fit)}</dd>
+        <dt>תנאים</dt><dd>${esc(it.conditions)}</dd>
+        <dt>דדליין</dt><dd>${dlHtml}</dd>
+        ${fam}
+        ${it.prestige?`<dt>מעמד</dt><dd>${esc(it.prestige)}</dd>`:''}
+      </dl>
+      <div class="actions">
+        <a class="btn btn-link" href="${esc(it.url)}" target="_blank" rel="noopener">🔗 לקול הקורא</a>
+        <button class="btn btn-mark" aria-pressed="${marks.has(it.id)}"
+          onclick="toggleMark('${it.id}',this)">
+          ${marks.has(it.id)?'✓ מסומן להגשה':'רלוונטי לי — סמני להגשה'}</button>
+        <div class="reminders">📌 תזכורות ליומן: ${rem||'אין דדליין ידוע — קבעי ידנית'}</div>
+      </div>`;
+    list.appendChild(card);
+  });
+  document.getElementById('empty').hidden = shown>0;
+  buildCatChips(cats);
+}
+
+function toggleMark(id, btn){
+  marks.has(id) ? marks.delete(id) : marks.add(id);
+  localStorage.setItem('oc_marks', JSON.stringify([...marks]));
+  render();
+}
+
+let catsBuilt = false;
+function buildCatChips(cats){
+  if(catsBuilt) return; catsBuilt = true;
+  const f = document.getElementById('filters');
+  [...cats].sort().forEach(c => {
+    const b = document.createElement('button');
+    b.className='chip'; b.dataset.f=c; b.textContent=c; b.setAttribute('aria-pressed','false');
+    f.appendChild(b);
+  });
+  f.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    filter = b.dataset.f;
+    f.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed', x===b));
+    render();
+  });
+}
+render();
+</script>
+</body>
+</html>

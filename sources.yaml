@@ -1,0 +1,74 @@
+# רשימת מקורות לסריקה — עברית ואנגלית
+# type: rss  -> קריאת פיד RSS (הכי אמין)
+# type: html -> סריקת דף HTML לפי סלקטורים (ייתכן שיידרש כוונון אם האתר משנה עיצוב)
+# language: he / en — עובר ל-Claude כהקשר לסינון
+
+sources:
+  # ---------- מקורות בינלאומיים (אנגלית) ----------
+  - name: "e-flux Announcements"
+    url: "https://www.e-flux.com/announcements/"
+    type: html
+    language: en
+    item_selector: "article a"
+
+  - name: "ArtConnect Opportunities"
+    url: "https://www.artconnect.com/opportunities"
+    type: html
+    language: en
+    item_selector: "a[href*='/opportunities/']"
+
+  - name: "TransArtists (residencies)"
+    url: "https://www.transartists.org/en/call-artists"
+    type: html
+    language: en
+    item_selector: "a[href*='call']"
+
+  - name: "Res Artis Open Calls"
+    url: "https://resartis.org/open-calls/"
+    type: html
+    language: en
+    item_selector: "a[href*='open-call']"
+
+  - name: "On the Move (funding & mobility)"
+    url: "https://on-the-move.org/news"
+    type: html
+    language: en
+    item_selector: "article a"
+
+  - name: "Curatorspace Opportunities"
+    url: "https://www.curatorspace.com/opportunities"
+    type: html
+    language: en
+    item_selector: "a[href*='/opportunities/']"
+
+  - name: "CaFE (CallForEntry)"
+    url: "https://artist.callforentry.org/festivals.php"
+    type: html
+    language: en
+    item_selector: "a[href*='festivals_unique_info']"
+
+  # ---------- מקורות ישראליים (עברית) ----------
+  - name: "מפעל הפיס — תרבות ואמנות"
+    url: "https://www.pais.co.il/tarbut/"
+    type: html
+    language: he
+    item_selector: "a"
+    keyword_prefilter: ["קול קורא", "מלגה", "פרס", "תמיכה"]
+
+  - name: "משרד התרבות — קולות קוראים"
+    url: "https://www.gov.il/he/departments/publications/?OfficeId=8f01ba3b-1a34-4de2-8bf5-a5f19520d1c1&limit=10&publicationType=4288a49a-8b90-46ea-8b4f-4b1b4e79bb27"
+    type: html
+    language: he
+    item_selector: "a"
+    keyword_prefilter: ["קול קורא", "אמנות", "תרבות"]
+
+  - name: "אסיף — קולות קוראים לאמנים"
+    url: "https://www.asif.org"
+    type: html
+    language: he
+    item_selector: "a"
+    keyword_prefilter: ["קול קורא"]
+
+# הערה: סלקטורים הם נקודת התחלה — אחרי ההרצה הראשונה מריצים במצב debug
+# (python scanner.py --debug) ורואים מה כל מקור מחזיר, ומכווננים לפי הצורך.
+# להוסיף מקור חדש = להוסיף בלוק כאן, בלי לגעת בקוד.
